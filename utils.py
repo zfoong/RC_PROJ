@@ -7,6 +7,7 @@ Created on Sun Jan 31 19:37:16 2021
 import cv2
 import math   
 import matplotlib.pyplot as plt    
+from keras.preprocessing import image  
 import pandas as pd
 import numpy as np  
 from tqdm import tqdm 
@@ -47,12 +48,31 @@ def extract_frame(data):
                 cv2.imwrite(filename, resized)
         cap.release()
         
-        
+
+def video_to_frames(video_file, frame_rate):
+    imgs = []
+    cap = cv2.VideoCapture(video_file)
+    while(cap.isOpened()):
+        frameId = cap.get(1) 
+        ret, frame = cap.read()
+        if (ret == False):
+            break
+        if (frameId % math.floor(frame_rate) == 0):
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
+            dim = (90, 60)
+            resized = cv2.resize(gray, dim, interpolation = cv2.INTER_AREA)
+            img = image.img_to_array(resized)
+            img = img.flatten()
+            img = img/255
+            imgs.append(img)
+    return imgs
+            
+
 def display_plt(result_list, name):
     avg_result = moving_average(result_list)
     plt.plot(avg_result)
-    plt.ylabel("Reward")
-    plt.xlabel("Episodes")
-    plt.ylim(0,200)
+    plt.ylabel("")
+    plt.xlabel("")
+    # plt.ylim(0,200)
     plt.savefig(name + '.png')
     plt.show()

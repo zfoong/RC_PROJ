@@ -17,6 +17,7 @@ from glob import glob
 from tqdm import tqdm
 import os
 from model import *
+from utils import *
 import csv
 import random
 
@@ -26,7 +27,7 @@ random.seed(100)
 
 # Param Init
 input_size = 5400
-N = 3000
+N = 300
 
 # Build video label mapping
 VIDEO_DIRECTORY = "C:\\Users\zfoong\Desktop\RC_proj\dataset\hmdb51_org"
@@ -55,6 +56,8 @@ middle_index = math.floor(len(data)*7/10)
 train = data[:middle_index]
 test = data[middle_index:]
 
+data.clear()
+
 # Define model
 model = ESN(input_size,len(label),N)
 
@@ -63,55 +66,20 @@ frame_rate = 5
 # Training
 for i in tqdm(range(len(train))):
     model.reset_state()
-    imgs = []
-    video_file = train[i][0]
-    cap = cv2.VideoCapture(video_file)
-    while(cap.isOpened()):
-        frameId = cap.get(1) 
-        ret, frame = cap.read()
-        if (ret == False):
-            break
-        if (frameId % math.floor(frame_rate) == 0):
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
-            dim = (90, 60)
-            resized = cv2.resize(gray, dim, interpolation = cv2.INTER_AREA)
-            img = image.img_to_array(resized)
-            img = img.flatten()
-            img = img/255
-            imgs.append(img)
+    imgs = video_to_frames(train[i][0], frame_rate)
     z = model.compute_z_all(imgs)
     model.train(z, encoded_zip[train[i][1]].reshape(1, -1))
+    # TODO train in buffer / epoch
     
 # Validation
-
-
+for i in tqdm(range(len(test))):
+    model.reset_state()
+    imgs = video_to_frames(test[i][0], frame_rate)
+    z = model.compute_z_all(imgs)
+    prediction = model.predict(z)
+    
 # Print selected neuron distribution
 
+# Print z distribution along time
+
 # Plot loss
-
-
-
-# model.reset_state()
-# imgs = []
-# video_file = train[0][0]
-# cap = cv2.VideoCapture(video_file)   # capturing the video from the given path
-# while(cap.isOpened()):
-#     frameId = cap.get(1) #current frame number
-#     ret, frame = cap.read()
-#     if (ret == False):
-#         break
-#     if (frameId % math.floor(frameRate) == 0):
-#         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
-#         dim = (90, 60)
-#         resized = cv2.resize(gray, dim, interpolation = cv2.INTER_AREA)
-#         cv2.imshow('img', resized)
-#         cv2.waitKey(0)  
-#         img = image.img_to_array(resized)
-#         img = img.flatten()
-#         img = img/255
-#         imgs.append(img)
-# z = model.compute_z_all(imgs)
-# model.train(z, encoded_zip[train[0][1]].reshape(1, -1))
-
-# # Save result in numpy file
-# np.save(TEST_NAME + '.npy', score_list)
